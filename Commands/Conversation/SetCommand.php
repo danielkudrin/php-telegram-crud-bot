@@ -18,30 +18,32 @@
 
 namespace Longman\TelegramBot\Commands\UserCommands;
 
+use Longman\TelegramBot\Commands\AdminCommand;
 use Longman\TelegramBot\Commands\UserCommand;
 use Longman\TelegramBot\Conversation;
+use Longman\TelegramBot\DB;
 use Longman\TelegramBot\Entities\Keyboard;
 use Longman\TelegramBot\Entities\KeyboardButton;
 use Longman\TelegramBot\Entities\ServerResponse;
 use Longman\TelegramBot\Exception\TelegramException;
 use Longman\TelegramBot\Request;
 
-class SurveyCommand extends UserCommand
+class SetCommand extends UserCommand
 {
     /**
      * @var string
      */
-    protected $name = 'survey';
+    protected $name = 'set';
 
     /**
      * @var string
      */
-    protected $description = 'Survery for bot users';
+    protected $description = 'Set a new practice session';
 
     /**
      * @var string
      */
-    protected $usage = '/survey';
+    protected $usage = '/set';
 
     /**
      * @var string
@@ -98,6 +100,7 @@ class SurveyCommand extends UserCommand
 
         // Load any existing notes from this conversation
         $notes = &$this->conversation->notes;
+        Request::sendMessage(['chat_id' => $chat_id, 'text' => $notes]);
         !is_array($notes) && $notes = [];
 
         // Load the current state of the conversation
@@ -113,13 +116,13 @@ class SurveyCommand extends UserCommand
                     $notes['state'] = 0;
                     $this->conversation->update();
 
-                    $data['text'] = 'Type your name:';
+                    $data['text'] = 'Введите Дату/Время тренировки: (Например: 23 апреля, 14:30)';
 
                     $result = Request::sendMessage($data);
                     break;
                 }
 
-                $notes['name'] = $text;
+                $notes['date'] = $text;
                 $text          = '';
 
             // No break!
@@ -128,128 +131,73 @@ class SurveyCommand extends UserCommand
                     $notes['state'] = 1;
                     $this->conversation->update();
 
-                    $data['text'] = 'Type your surname:';
+                    $data['text'] = 'Введите адрес проведения тренировки: (Например: Riga, Zeiferta iela 12)';
 
                     $result = Request::sendMessage($data);
                     break;
                 }
 
-                $notes['surname'] = $text;
+                $notes['address'] = $text;
                 $text             = '';
 
             // No break!
             case 2:
-                if ($text === '' || !is_numeric($text)) {
+                if ($text === '') {
                     $notes['state'] = 2;
                     $this->conversation->update();
 
-                    $data['text'] = 'Type your age:';
-                    if ($text !== '') {
-                        $data['text'] = 'Age must be a number';
-                    }
+                    $data['text'] = 'Введите краткое описание тренировки: ';
 
                     $result = Request::sendMessage($data);
                     break;
                 }
 
-                $notes['age'] = $text;
+                $notes['description'] = $text;
                 $text         = '';
 
             // No break!
             case 3:
-                if ($text === '' || !in_array($text, ['M', 'F'], true)) {
+                if ($text === '') {
                     $notes['state'] = 3;
                     $this->conversation->update();
 
-                    $data['reply_markup'] = (new Keyboard(['M', 'F']))
-                        ->setResizeKeyboard(true)
-                        ->setOneTimeKeyboard(true)
-                        ->setSelective(true);
-
-                    $data['text'] = 'Select your gender:';
-                    if ($text !== '') {
-                        $data['text'] = 'Choose a keyboard option to select your gender';
-                    }
+                    $data['text'] = 'Введите сумму стоимости тренировки: ';
 
                     $result = Request::sendMessage($data);
                     break;
                 }
 
-                $notes['gender'] = $text;
+                $notes['price'] = $text;
+                $text = '';
 
-            // No break!
             case 4:
-                if ($message->getLocation() === null) {
-                    $notes['state'] = 4;
-                    $this->conversation->update();
-
-                    $data['reply_markup'] = (new Keyboard(
-                        (new KeyboardButton('Share Location'))->setRequestLocation(true)
-                    ))
-                        ->setOneTimeKeyboard(true)
-                        ->setResizeKeyboard(true)
-                        ->setSelective(true);
-
-                    $data['text'] = 'Share your location:';
-
-                    $result = Request::sendMessage($data);
-                    break;
-                }
-
-                $notes['longitude'] = $message->getLocation()->getLongitude();
-                $notes['latitude']  = $message->getLocation()->getLatitude();
-
-            // No break!
-            case 5:
-                if ($message->getPhoto() === null) {
-                    $notes['state'] = 5;
-                    $this->conversation->update();
-
-                    $data['text'] = 'Insert your picture:';
-
-                    $result = Request::sendMessage($data);
-                    break;
-                }
-
-                $photo             = $message->getPhoto()[0];
-                $notes['photo_id'] = $photo->getFileId();
-
-            // No break!
-            case 6:
-                if ($message->getContact() === null) {
-                    $notes['state'] = 6;
-                    $this->conversation->update();
-
-                    $data['reply_markup'] = (new Keyboard(
-                        (new KeyboardButton('Share Contact'))->setRequestContact(true)
-                    ))
-                        ->setOneTimeKeyboard(true)
-                        ->setResizeKeyboard(true)
-                        ->setSelective(true);
-
-                    $data['text'] = 'Share your contact information:';
-
-                    $result = Request::sendMessage($data);
-                    break;
-                }
-
-                $notes['phone_number'] = $message->getContact()->getPhoneNumber();
-
-            // No break!
-            case 7:
                 $this->conversation->update();
-                $out_text = '/Survey result:' . PHP_EOL;
                 unset($notes['state']);
-                foreach ($notes as $k => $v) {
-                    $out_text .= PHP_EOL . ucfirst($k) . ': ' . $v;
+
+                $pdo = DB::getPdo();
+
+                try {
+                    $stmt = $pdo->prepare(
+                        'INSERT INTO practice_event (`event_date`, `event_address`, `event_description`, `event_price`) 
+                    VALUES (?, ?, ?, ?);'
+                    );
+                    $stmt->execute([$notes['date'], $notes['address'], $notes['description'], $notes['price']]);
+                    echo 'Set event successfully!' . PHP_EOL;
+                } catch (\Exception $e) {
+                    echo 'Unsuccessful insert into practice_event!' . PHP_EOL;
                 }
 
-                $data['photo']   = $notes['photo_id'];
-                $data['caption'] = $out_text;
+                $out_text = "Тренировка успешно запланирована! Регистрация доступна: " . PHP_EOL . PHP_EOL;
+                $out_text .= 'Дата проведения: ' . $notes['date'] . PHP_EOL;
+                $out_text .= 'Адрес: ' . $notes['address'] . PHP_EOL;
+                $out_text .= 'Краткое описание : ' . $notes['description'] . PHP_EOL;
+                $out_text .= 'Цена : ' . $notes['price'] . PHP_EOL;
+
+                $data['text'] = $out_text;
 
                 $this->conversation->stop();
 
-                $result = Request::sendPhoto($data);
+                $result = Request::sendMessage($data);
                 break;
         }
 

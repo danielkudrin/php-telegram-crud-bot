@@ -56,6 +56,6 @@ class GenericCommand extends SystemCommand
             return $this->telegram->executeCommand('whois');
         }
 
-        return $this->replyToChat("Command /{$command} not found.. :(");
+        return $this->replyToChat("Команда /{$command} не найдена.. Попробуйте /help для получения списка команд");
     }
 }

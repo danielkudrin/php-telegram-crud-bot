@@ -15,16 +15,17 @@
  *
  * Gets executed when any type of message is sent.
  *
- * In this conversation-related context, we must ensure that active conversations get executed correctly.
+ * In this message-related context, we can handle any kind of message.
  */
 
 namespace Longman\TelegramBot\Commands\SystemCommands;
 
 use Longman\TelegramBot\Commands\SystemCommand;
-use Longman\TelegramBot\Conversation;
+use Longman\TelegramBot\Entities\InlineKeyboard;
 use Longman\TelegramBot\Entities\ServerResponse;
-use Longman\TelegramBot\Exception\TelegramException;
 use Longman\TelegramBot\Request;
+use Longman\TelegramBot\Conversation;
+use Longman\TelegramBot\Exception\TelegramException;
 
 class GenericmessageCommand extends SystemCommand
 {
@@ -44,30 +45,16 @@ class GenericmessageCommand extends SystemCommand
     protected $version = '1.0.0';
 
     /**
-     * @var bool
-     */
-    protected $need_mysql = true;
-
-    /**
-     * Command execute method if MySQL is required but not available
-     *
-     * @return ServerResponse
-     */
-    public function executeNoDb(): ServerResponse
-    {
-        // Do nothing
-        return Request::emptyResponse();
-    }
-
-    /**
      * Main command execution
      *
      * @return ServerResponse
-     * @throws TelegramException
      */
     public function execute(): ServerResponse
     {
+
         $message = $this->getMessage();
+        $message_text = $message->getText(true);
+        $chat_id = $message->getChat()->getId();
 
         // If a conversation is busy, execute the conversation command after handling the message.
         $conversation = new Conversation(
@@ -79,7 +66,20 @@ class GenericmessageCommand extends SystemCommand
         if ($conversation->exists() && $command = $conversation->getCommand()) {
             return $this->telegram->executeCommand($command);
         }
+        if ($message_text !== '/start') {
+            $textMessage = 'Ваш запрос не найден...' . PHP_EOL . PHP_EOL;
+            $textMessage .= 'Попробуйте одну из следующих команд:' . PHP_EOL . PHP_EOL;
+            $textMessage .= '/help - Для получения всех команд.' . PHP_EOL;
+            $textMessage .= '/show - Для запроса информации о следующей тренировке.' . PHP_EOL;
+            $textMessage .= '/register - Для регистрации.' . PHP_EOL;
+
+            return Request::sendMessage([
+                'chat_id' => $chat_id,
+                'text' => $textMessage,
+            ]);
+        }
 
         return Request::emptyResponse();
     }
 }
+

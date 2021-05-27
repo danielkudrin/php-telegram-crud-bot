@@ -23,6 +23,7 @@
 namespace Longman\TelegramBot\Commands\SystemCommands;
 
 use Longman\TelegramBot\Commands\SystemCommand;
+use Longman\TelegramBot\DB;
 use Longman\TelegramBot\Entities\ServerResponse;
 use Longman\TelegramBot\Exception\TelegramException;
 
@@ -61,12 +62,14 @@ class StartCommand extends SystemCommand
      */
     public function execute(): ServerResponse
     {
-        // If you use deep-linking, get the parameter like this:
-        // $deep_linking_parameter = $this->getMessage()->getText(true);
-
         return $this->replyToChat(
-            'Hi there!' . PHP_EOL .
-            'Type /help to see all commands!'
+            'Приветствую!' . PHP_EOL .
+            'Вам доступны следующие команды: ' . PHP_EOL . PHP_EOL .
+            '/show - Получение данных запланированной тренировки' . PHP_EOL . PHP_EOL .
+            '/register - Запись на ближайшую тренировку' . PHP_EOL . PHP_EOL .
+            '/set - Регистрация следующей тренировки' . PHP_EOL . PHP_EOL .
+            '/users - Просмотр зарегистрированных пользователей' . PHP_EOL . PHP_EOL .
+            '/help - Получение списка всех команд.' . PHP_EOL
         );
     }
 }
