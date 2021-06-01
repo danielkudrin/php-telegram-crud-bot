@@ -93,7 +93,7 @@ class UsersCommand extends UserCommand
         $data['text'] = "Зарегистрированные пользователи: " . PHP_EOL . PHP_EOL;
 
         foreach ($practiceEventUser as $user) {
-            $data['text'] .= 'Имя - TG: ' . $user['real_name'] . PHP_EOL;
+            $data['text'] .= 'Имя: ' . $user['real_name'] . PHP_EOL;
             $data['text'] .= 'TG: ' . '@' . $user['telegram_name'] . PHP_EOL;
             $data['text'] .= 'Указанный номер телефона: ' . $user['phone_number'] . PHP_EOL;
             $data['text'] .= PHP_EOL . PHP_EOL;

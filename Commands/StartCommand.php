@@ -62,14 +62,30 @@ class StartCommand extends SystemCommand
      */
     public function execute(): ServerResponse
     {
+        $message = $this->getMessage();
+        $user    = $message->getFrom();
+        $language = $user->getLanguageCode();
+
+        if ($language === 'ru') {
+            return $this->replyToChat(
+                'Приветствую!' . PHP_EOL .
+                'Вам доступны следующие команды: ' . PHP_EOL . PHP_EOL .
+                '/show - Просмотр запланированной тренировки.' . PHP_EOL . PHP_EOL .
+                '/register - Запись на ближайшую тренировку.' . PHP_EOL . PHP_EOL .
+                '/set - Регистрация следующей тренировки.' . PHP_EOL . PHP_EOL .
+                '/users - Просмотр зарегистрированных пользователей.' . PHP_EOL . PHP_EOL .
+                '/help - Получение списка всех команд.' . PHP_EOL
+            );
+        }
         return $this->replyToChat(
-            'Приветствую!' . PHP_EOL .
-            'Вам доступны следующие команды: ' . PHP_EOL . PHP_EOL .
-            '/show - Получение данных запланированной тренировки' . PHP_EOL . PHP_EOL .
-            '/register - Запись на ближайшую тренировку' . PHP_EOL . PHP_EOL .
-            '/set - Регистрация следующей тренировки' . PHP_EOL . PHP_EOL .
-            '/users - Просмотр зарегистрированных пользователей' . PHP_EOL . PHP_EOL .
-            '/help - Получение списка всех команд.' . PHP_EOL
+            'Welcome!' . PHP_EOL .
+            'The following commands are available: ' . PHP_EOL . PHP_EOL .
+            '/show - View the details of the next practice session.' . PHP_EOL . PHP_EOL .
+            '/register - Register for the next practice session.' . PHP_EOL . PHP_EOL .
+            '/set - Set the details of the next practice session.' . PHP_EOL . PHP_EOL .
+            '/users - View registered users for the next practice session.' . PHP_EOL . PHP_EOL .
+            '/help - Get the list of available commands.' . PHP_EOL
         );
+
     }
 }

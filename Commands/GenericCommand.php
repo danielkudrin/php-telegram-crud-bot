@@ -49,6 +49,8 @@ class GenericCommand extends SystemCommand
         $message = $this->getMessage();
         $user_id = $message->getFrom()->getId();
         $command = $message->getCommand();
+        $user    = $message->getFrom();
+        $language = $user->getLanguageCode();
 
         // To enable proper use of the /whois command.
         // If the user is an admin and the command is in the format "/whoisXYZ", call the /whois command
@@ -56,6 +58,9 @@ class GenericCommand extends SystemCommand
             return $this->telegram->executeCommand('whois');
         }
 
-        return $this->replyToChat("Команда /{$command} не найдена.. Попробуйте /help для получения списка команд");
+        if ($language === 'ru') {
+            return $this->replyToChat("Команда /{$command} не найдена.. Попробуйте /help для получения списка команд");
+        }
+        return $this->replyToChat("Command /{$command} Is not found.. Try /help to view the list of all available commands");
     }
 }

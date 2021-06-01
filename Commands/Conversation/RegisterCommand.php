@@ -82,6 +82,7 @@ class RegisterCommand extends UserCommand
         $chat_id = $chat->getId();
         $user_id = $user->getId();
         $telegramName = $user->getUsername();
+        $language = $user->getLanguageCode();
 
         $data = [
             'chat_id' => $chat_id,
@@ -108,7 +109,11 @@ class RegisterCommand extends UserCommand
                     $notes['state'] = 0;
                     $this->conversation->update();
 
-                    $data['text'] = 'Your name | Jūsu vārds | Ваше имя: ';
+                    if ($language === 'ru') {
+                        $data['text'] = 'Введите Ваше имя: ';
+                    } else {
+                        $data['text'] = 'Enter your name: ';
+                    }
 
                     $result = Request::sendMessage($data);
                     break;
@@ -123,7 +128,11 @@ class RegisterCommand extends UserCommand
                     $notes['state'] = 1;
                     $this->conversation->update();
 
-                    $data['text'] = 'Your tel. number | Jūsu tel. numurs | Ваш телефонный номер :';
+                    if ($language === 'ru') {
+                        $data['text'] = 'Введите Ваш телефонный номер :';
+                    } else {
+                        $data['text'] = 'Enter your mobile number: ';
+                    }
 
                     $result = Request::sendMessage($data);
                     break;
@@ -138,13 +147,12 @@ class RegisterCommand extends UserCommand
                 $this->conversation->update();
                 unset($notes['state']);
 
-                $data['text'] = "Thank you! | Paldies! | Спасибо!";
 
                 $pdo = DB::getPdo();
 
-                $practiceEventStmt = $pdo->prepare('SELECT id FROM practice_event ORDER BY id DESC LIMIT 1;');
+                $practiceEventStmt = $pdo->prepare('SELECT * FROM practice_event ORDER BY id DESC LIMIT 1;');
                 $practiceEventStmt->execute();
-                $practiceEventId = $practiceEventStmt->fetch();
+                $practiceEvent = $practiceEventStmt->fetch();
 
                 $stmt = $pdo->prepare('
 INSERT INTO registered_users (`practice_event_id`, `real_name`, `phone_number`, `telegram_name`) 
@@ -152,13 +160,24 @@ VALUES (:practice_event_id, :real_name, :phone_number, :telegram_name);
 ');
                 $stmt->execute(
                     [
-                        'practice_event_id' => $practiceEventId[0],
+                        'practice_event_id' => $practiceEvent['id'],
                         'real_name' => $notes['name'],
                         'phone_number' => $notes['number'],
                         'telegram_name' => $telegramName,
                     ]
                 );
 
+                if ($language === 'ru') {
+                    $data['text'] = "Вы успешно зарегистрировались! Детали мероприятия: " . PHP_EOL .
+                        PHP_EOL . "Дата : {$practiceEvent['event_date']}" .
+                        PHP_EOL . "Адрес : {$practiceEvent['event_address']}"
+                    ;
+                } else {
+                     $data['text'] = "You've successfully registered! Details of the event: " . PHP_EOL .
+                        PHP_EOL . "Date : {$practiceEvent['event_date']}" .
+                        PHP_EOL . "Address : {$practiceEvent['event_address']}"
+                    ;
+                }
                 $this->conversation->stop();
 
                 $result = Request::sendMessage($data);

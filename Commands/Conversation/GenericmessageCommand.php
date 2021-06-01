@@ -55,6 +55,8 @@ class GenericmessageCommand extends SystemCommand
         $message = $this->getMessage();
         $message_text = $message->getText(true);
         $chat_id = $message->getChat()->getId();
+        $user = $message->getFrom();
+        $language = $user->getLanguageCode();
 
         // If a conversation is busy, execute the conversation command after handling the message.
         $conversation = new Conversation(
@@ -66,18 +68,27 @@ class GenericmessageCommand extends SystemCommand
         if ($conversation->exists() && $command = $conversation->getCommand()) {
             return $this->telegram->executeCommand($command);
         }
-        if ($message_text !== '/start') {
-            $textMessage = 'Ваш запрос не найден...' . PHP_EOL . PHP_EOL;
-            $textMessage .= 'Попробуйте одну из следующих команд:' . PHP_EOL . PHP_EOL;
-            $textMessage .= '/help - Для получения всех команд.' . PHP_EOL;
-            $textMessage .= '/show - Для запроса информации о следующей тренировке.' . PHP_EOL;
-            $textMessage .= '/register - Для регистрации.' . PHP_EOL;
 
-            return Request::sendMessage([
-                'chat_id' => $chat_id,
-                'text' => $textMessage,
-            ]);
+
+        if ($message_text !== '/start') {
+            if ($language === 'ru') {
+                $textMessage = 'Ваш запрос не найден...' . PHP_EOL . PHP_EOL;
+                $textMessage .= 'Попробуйте одну из следующих команд:' . PHP_EOL . PHP_EOL;
+                $textMessage .= '/help - Для получения всех команд.' . PHP_EOL;
+                $textMessage .= '/show - Для запроса информации о следующей тренировке.' . PHP_EOL;
+                $textMessage .= '/register - Для регистрации на тренировку' . PHP_EOL;
+
+                return Request::sendMessage(['chat_id' => $chat_id, 'text' => $textMessage,]);
+            }
+            $textMessage = 'Your query is not found...' . PHP_EOL . PHP_EOL;
+            $textMessage .= 'Try one of the following commands:' . PHP_EOL . PHP_EOL;
+            $textMessage .= '/help - To view all available commands.' . PHP_EOL;
+            $textMessage .= '/show - To view the next practice session.' . PHP_EOL;
+            $textMessage .= '/register - To register for the next practice session.' . PHP_EOL;
+
+            return Request::sendMessage(['chat_id' => $chat_id, 'text' => $textMessage,]);
         }
+
 
         return Request::emptyResponse();
     }

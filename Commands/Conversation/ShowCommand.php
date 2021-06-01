@@ -74,6 +74,7 @@ class ShowCommand extends UserCommand
         $text    = trim($message->getText(true));
         $chat_id = $chat->getId();
         $user_id = $user->getId();
+        $language = $user->getLanguageCode();
 
         // Preparing response
         $data = [
@@ -85,17 +86,46 @@ class ShowCommand extends UserCommand
         $stmt->execute();
         $practiceEventRow = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-        $data['text'] = "Registration is available | Registracija pieejama |Регистрация доступна" . PHP_EOL . PHP_EOL;
-                $data['text'] .= 'Date | Datums | Дата : ' . $practiceEventRow['event_date'] . PHP_EOL . PHP_EOL;
-                $data['text'] .= 'Address | Adrese | Адрес : ' . $practiceEventRow['event_address'] . PHP_EOL . PHP_EOL;
-                $data['text'] .= 'Description | Apraksts |Краткое описание : ' . $practiceEventRow['event_description'] . PHP_EOL . PHP_EOL;
-                $data['text'] .= 'Price | Cena | Цена : ' . $practiceEventRow['event_price'] . PHP_EOL . PHP_EOL;
+        $data['text'] = $this->output($language, $practiceEventRow);
 
         Request::sendMessage($data);
-
 
         $result = Request::emptyResponse();
 
         return $result;
+    }
+
+    private function output($language, $practiceEventRow)
+    {
+        if ($language === 'ru') {
+            $output = <<<EOF
+Регистрация доступна -
+
+
+Дата : {$practiceEventRow['event_date']}
+
+Адрес : {$practiceEventRow['event_address']}
+
+Краткое описание : {$practiceEventRow['event_description']}
+
+Цена : {$practiceEventRow['event_price']}
+EOF;
+
+            return $output;
+        }
+        $output =  <<<EOF
+Registration is available -
+
+
+Date : {$practiceEventRow['event_date']}
+
+Address : {$practiceEventRow['event_address']}
+
+Description : {$practiceEventRow['event_description']}
+
+Price : {$practiceEventRow['event_price']}
+EOF;
+
+        return $output;
     }
 }
